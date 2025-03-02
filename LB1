@@ -1,0 +1,77 @@
+import threading
+
+class Product:
+    def __init__(self, name, price):
+        self.name = name
+        self.price = price
+
+class Warehouse:
+    def __init__(self, balance):
+        self.balance = balance
+        self.inventory = {}
+        self.lock = threading.Lock()
+
+    def add_product(self, product, quantity, cost_price):
+        with self.lock:
+            total_cost = cost_price * quantity
+            if self.balance >= total_cost:
+                self.balance -= total_cost
+                if product.name in self.inventory:
+                    self.inventory[product.name]["quantity"] += quantity
+                else:
+                    self.inventory[product.name] = {"product": product, "quantity": quantity}
+                print(f"Added {quantity} units of {product.name} to warehouse.")
+            else:
+                print("Insufficient funds in warehouse account!")
+
+    def sell_product(self, product_name, quantity, sale_price):
+        with self.lock:
+            if product_name in self.inventory and self.inventory[product_name]["quantity"] >= quantity:
+                self.inventory[product_name]["quantity"] -= quantity
+                self.balance += sale_price * quantity
+                print(f"Sold {quantity} units of {product_name}.")
+            else:
+                print("Not enough stock available!")
+
+class Invoice:
+    def __init__(self, supplier, warehouse, products):
+        self.supplier = supplier
+        self.warehouse = warehouse
+        self.products = products
+        self.lock = threading.Lock()
+    
+    def process(self):
+        with self.lock:
+            if self.supplier.lock.acquire(blocking=False):
+                for product, quantity, cost_price in self.products:
+                    self.warehouse.add_product(product, quantity, cost_price)
+                self.supplier.lock.release()
+            else:
+                print("Supplier account is locked! Cannot process invoice.")
+
+class Supplier:
+    def __init__(self, name):
+        self.name = name
+        self.lock = threading.Lock()
+
+class Client:
+    def __init__(self, name):
+        self.name = name
+    
+    def buy(self, warehouse, product_name, quantity, sale_price):
+        warehouse.sell_product(product_name, quantity, sale_price)
+
+# Демонстрація
+warehouse = Warehouse(balance=10000)
+supplier = Supplier("ABC Supplies")
+product1 = Product("Laptop", 500)
+product2 = Product("Phone", 300)
+
+invoice = Invoice(supplier, warehouse, [(product1, 10, 450), (product2, 20, 250)])
+invoice.process()
+
+client1 = Client("John")
+client2 = Client("Alice")
+
+client1.buy(warehouse, "Laptop", 2, 600)
+client2.buy(warehouse, "Phone", 5, 350)
