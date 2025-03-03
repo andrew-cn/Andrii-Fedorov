@@ -70,8 +70,8 @@ product2 = Product("Phone", 300)
 invoice = Invoice(supplier, warehouse, [(product1, 10, 450), (product2, 20, 250)])
 invoice.process()
 
-client1 = Client("John")
-client2 = Client("Alice")
+client1 = Client("Andrii")
+client2 = Client("Serhii")
 
 client1.buy(warehouse, "Laptop", 2, 600)
 client2.buy(warehouse, "Phone", 5, 350)
